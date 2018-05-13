@@ -1,16 +1,16 @@
-# Ansible Role zfs-auto-snapshot
+# zfs-auto-snapshot
 
-This is an ansible role for installing and configuring [zfs-auto-snapshot](https://github.com/zfsonlinux/zfs-auto-snapshot).
+This is an Ansible role for installing and configuring [zfs-auto-snapshot](https://github.com/zfsonlinux/zfs-auto-snapshot).
 
 ## Requirements
 
-- Cron installed
+- `cron` installed
 - Python (for ansible)
 - ZFS installed and `zfs` command in `$PATH`
 - Root (or sudo) access
-- Internet access for ZFS hosts (download script)
+- A `global_cache_dir` variable where the git repository will be cloned to on the local machine
 - The ZFS datasets need to exist, they won't get created
-- Should run on any system that runs POSIX shell. Though tested only on Debian. 
+- Should run on any system that runs POSIX shell. Though tested only on Debian.
 
 ## Usage
 
@@ -18,7 +18,7 @@ Example usage:
 ```yaml
 - hosts: zfs-servers
   vars:
-    zfs_datasets:
+    zfs_autosnap_datasets:
       tank/data/home:
         frequent: true
         daily: true
@@ -27,7 +27,7 @@ Example usage:
         hourly: true
         daily: true
   roles:
-    - { role: ccremer.zfs-auto-snapshot }
+    - { role: zfs-auto-snapshot }
 ```
 
 ## Parameters
@@ -36,8 +36,8 @@ Advanced usage (with default values):
 ```yaml
 - hosts: zfs-servers
   vars:
-    zfs_datasets:
-      # No worries, the actual default is empty. This example dataset shows the default properties of each dataset if not defined.
+    zfs_autosnap_datasets:
+      # No worries, the actual default is empty.
       tank/example/dataset:
         enabled: true
         frequent: false
@@ -45,22 +45,32 @@ Advanced usage (with default values):
         daily: false
         weekly: false
         monthly: false
-    # How often the 'frequent' snapshots occur. Integers from 1 to 30
-    zfs_keep_frequent_interval: 15
+
+    zfs_autosnap_version: "upstream/1.2.4"
+
+    # How often the 'frequent' snapshots occur. Can be anything from 1 to 59
+    zfs_autosnap_keep_frequent_interval: 15
 
     # Count how many snapshots we can have before deleting.
-    zfs_keep_frequent: 4
-    zfs_keep_hourly: 24
-    zfs_keep_daily: 31
-    zfs_keep_weekly: 8
-    zfs_keep_monthly: 12
+    zfs_autosnap_keep_frequent: 4
+    zfs_autosnap_keep_hourly: 24
+    zfs_autosnap_keep_daily: 31
+    zfs_autosnap_keep_weekly: 8
+    zfs_autosnap_keep_monthly: 12
 
-    # Should we always download the most recent script with each run?
-    autosnap_update: false
+    # Enable different labels by default
+    zfs_autosnap_default_enable: True
+    zfs_autosnap_default_frequent: False
+    zfs_autosnap_default_hourly: False
+    zfs_autosnap_default_daily: False
+    zfs_autosnap_default_weekly: False
+    zfs_autosnap_default_monthly: False
+
     # The arguments to append to the script.
-    autosnap_args: "--quiet --syslog --default-exclude"
+    zfs_autosnap_args: "--quiet --syslog --default-exclude"
+
   roles:
-    - { role: ccremer.zfs-auto-snapshot }
+    - { role: zfs-auto-snapshot }
 ```
 
 ## Gotchas

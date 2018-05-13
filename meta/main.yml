@@ -11,9 +11,14 @@ galaxy_info:
   - name: Debian
     versions:
       - all
+  - name: Ubuntu
+    versions:
+      - all
   - name: CentOS
     versions:
       - all
   galaxy_tags:
     - system
     - storage
+    - zfs
+    - snapshot
