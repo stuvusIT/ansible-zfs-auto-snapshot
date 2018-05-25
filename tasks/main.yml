@@ -1,73 +1,73 @@
 ---
-# Install
-- name: Create target dir
+- name: Create /usr/local/sbin directory
   file:
     path: /usr/local/sbin
     group: root
     owner: root
     state: directory
     mode: 0755
-  become: true
 
-- name: Download script
-  get_url:
-      url: https://raw.githubusercontent.com/zfsonlinux/zfs-auto-snapshot/master/src/zfs-auto-snapshot.sh
-      force: "{{ autosnap_update }}"
-      mode: 0755
-      dest: "{{ autosnap_bin }}"
-      group: root
-      owner: root
-  become: true
+- name: Clone zfs-auto-snapshot repository to local machine
+  git:
+    repo: "https://github.com/zfsonlinux/zfs-auto-snapshot.git"
+    dest: "{{ global_cache_dir | mandatory }}/zfs-auto-snapshot"
+    force: true
+    version: "{{ zfs_autosnap_version }}"
+  become: no
+  run_once: true
+  delegate_to: localhost
 
-- name: Download man page
-  get_url:
-      url: https://raw.githubusercontent.com/zfsonlinux/zfs-auto-snapshot/master/src/zfs-auto-snapshot.8
-      force: "{{ autosnap_update }}"
-      mode: 0644
-      dest: /usr/share/man/man8/zfs-auto-snapshot.8
-      group: root
-      owner: root
-  become: true
+- name: Copy zfs-auto-snapshot script to target machine
+  copy:
+    src: "{{ global_cache_dir | mandatory }}/zfs-auto-snapshot/src/zfs-auto-snapshot.sh"
+    dest: "{{ zfs_autosnap_bin }}"
+    mode: 0755
+    owner: root
+    group: root
 
-- name: add PATH to cron
+- name: Copy sources to target machine
+  copy:
+    src: "{{ global_cache_dir | mandatory }}/zfs-auto-snapshot/src/zfs-auto-snapshot.8"
+    dest: "/usr/share/man/man8/zfs-auto-snapshot.8"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Add PATH environment variable to cron
   cron:
     env: yes
     name: PATH
     value: "/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
     user: root
     state: present
-  become: yes
 
 - name: Set up hourly/daily/weekly/monthly cron job
   cron:
     name: "zfs auto snapshot {{ item.label }}"
     special_time: "{{ item.label }}"
-    job: "{{ autosnap_bin }} {{ autosnap_args }} --label={{ item.label }} --keep={{ item.keep }} //"
+    job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label={{ item.label }} --keep={{ item.keep }} //"
     user: root
-  become: true
   with_items:
-    - { label: hourly,  keep: "{{ zfs_keep_hourly }}" }
-    - { label: daily,   keep: "{{ zfs_keep_daily }}" }
-    - { label: weekly,  keep: "{{ zfs_keep_weekly }}" }
-    - { label: monthly, keep: "{{ zfs_keep_monthly }}" }
+    - { label: hourly,  keep: "{{ zfs_autosnap_keep_hourly }}" }
+    - { label: daily,   keep: "{{ zfs_autosnap_keep_daily }}" }
+    - { label: weekly,  keep: "{{ zfs_autosnap_keep_weekly }}" }
+    - { label: monthly, keep: "{{ zfs_autosnap_keep_monthly }}" }
 
 - name: Set up frequent cron job
   cron:
     name: "zfs auto snapshot frequent"
-    minute: "*/{{ zfs_keep_frequent_interval }}"
-    job: "{{ autosnap_bin }} {{ autosnap_args }} --label=frequent --keep={{ zfs_keep_frequent }} //"
+    minute: "*/{{ zfs_autosnap_keep_frequent_interval }}"
+    job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label=frequent --keep={{ zfs_autosnap_keep_frequent }} //"
     user: root
-  become: true
+    cron_file: ansible_zfs-auto-snapshot-frequent
 
 - name: Update ZFS properties
   zfs:
     name: "{{ item.key }}"
-    "com.sum:auto-snapshot": "{{ item.value.enabled | default(true) | lower }}"
-    "com.sun:auto-snapshot:frequent": "{{ item.value.frequent | default(false) | lower }}"
-    "com.sun:auto-snapshot:hourly": "{{ item.value.hourly | default(false) | lower }}"
-    "com.sun:auto-snapshot:daily": "{{ item.value.daily | default(false) | lower }}"
-    "com.sun:auto-snapshot:weekly": "{{ item.value.weekly | default(false) | lower }}"
-    "com.sun:auto-snapshot:monthly": "{{ item.value.monthly | default(false) | lower }}"
-    state: present
-  become: true
-  with_dict: "{{ zfs_datasets }}"
+    "com.sun:auto-snapshot": "{{ item.value.enabled | default(zfs_autosnap_default_enable) | lower }}"
+    "com.sun:auto-snapshot:frequent": "{{ item.value.frequent | default(zfs_autosnap_default_frequent) | lower }}"
+    "com.sun:auto-snapshot:hourly": "{{ item.value.hourly | default(zfs_autosnap_default_hourly) | lower }}"
+    "com.sun:auto-snapshot:daily": "{{ item.value.daily | default(zfs_autosnap_default_daily) | lower }}"
+    "com.sun:auto-snapshot:weekly": "{{ item.value.weekly | default(zfs_autosnap_default_weekly) | lower }}"
+    "com.sun:auto-snapshot:monthly": "{{ item.value.monthly | default(zfs_autosnap_default_monthly) | lower }}"
+  with_dict: "{{ zfs_autosnap_datasets }}"
