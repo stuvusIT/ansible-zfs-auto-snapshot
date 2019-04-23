@@ -25,7 +25,7 @@
     owner: root
     group: root
 
-- name: Copy sources to target machine
+- name: Copy man page to target machine
   copy:
     src: "{{ global_cache_dir | mandatory }}/zfs-auto-snapshot/src/zfs-auto-snapshot.8"
     dest: "/usr/share/man/man8/zfs-auto-snapshot.8"
@@ -33,20 +33,15 @@
     owner: root
     group: root
 
-- name: Add PATH environment variable to cron
-  cron:
-    env: yes
-    name: PATH
-    value: "/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
-    user: root
-    state: present
-
 - name: Set up hourly/daily/weekly/monthly cron job
   cron:
     name: "zfs auto snapshot {{ item.label }}"
     special_time: "{{ item.label }}"
     job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label={{ item.label }} --keep={{ item.keep }} //"
     user: root
+    env: yes
+    name: PATH
+    value: "/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
   with_items:
     - { label: hourly,  keep: "{{ zfs_autosnap_keep_hourly }}" }
     - { label: daily,   keep: "{{ zfs_autosnap_keep_daily }}" }
@@ -60,6 +55,9 @@
     job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label=frequent --keep={{ zfs_autosnap_keep_frequent }} //"
     user: root
     cron_file: ansible_zfs-auto-snapshot-frequent
+    env: yes
+    name: PATH
+    value: "/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 
 - name: Update ZFS properties
   zfs:
