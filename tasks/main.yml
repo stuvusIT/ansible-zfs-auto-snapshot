@@ -35,7 +35,6 @@
 
 - name: Set up hourly/daily/weekly/monthly cron job
   cron:
-    name: "zfs auto snapshot {{ item.label }}"
     special_time: "{{ item.label }}"
     job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label={{ item.label }} --keep={{ item.keep }} //"
     user: root
@@ -50,7 +49,6 @@
 
 - name: Set up frequent cron job
   cron:
-    name: "zfs auto snapshot frequent"
     minute: "*/{{ zfs_autosnap_keep_frequent_interval }}"
     job: "{{ zfs_autosnap_bin }} {{ zfs_autosnap_args }} --label=frequent --keep={{ zfs_autosnap_keep_frequent }} //"
     user: root
