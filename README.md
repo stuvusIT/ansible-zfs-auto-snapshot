@@ -41,7 +41,7 @@ Advanced usage (with default values):
       tank/example/dataset:
         enabled: true
         frequent: false
-        hourly: false       
+        hourly: false
         daily: false
         weekly: false
         monthly: false
